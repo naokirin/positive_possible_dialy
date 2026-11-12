@@ -1,0 +1,47 @@
+:root {
+  --ink: #1f3a33;
+  --ink-soft: #4d6a61;
+  --bg: #eef7f3;
+  --surface: #fbfefc;
+  --line: #d5e6df;
+  --accent: #5fa88f;
+  --accent-deep: #3f8f74;
+  --accent-soft: #d8efe5;
+  --sky: #8ec5d8;
+
+  --sans: 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Noto Sans JP',
+    'Segoe UI', sans-serif;
+
+  font: 16px/1.5 var(--sans);
+  color: var(--ink);
+  background:
+    radial-gradient(1200px 600px at 10% -10%, #d9f0ff 0%, transparent 55%),
+    radial-gradient(900px 500px at 100% 0%, #d8efe5 0%, transparent 50%),
+    var(--bg);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
+#app {
+  height: 100%;
+  overflow: hidden;
+}
+
+button,
+input,
+textarea {
+  font: inherit;
+}
