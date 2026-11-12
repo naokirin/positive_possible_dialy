@@ -31,6 +31,6 @@ npm run preview
 ## GitHub Pages
 
 `main` への push で `.github/workflows/pages.yml` が `dist` を公開します。  
-アセットは相対パス（`base: './'`）なので、プロジェクト Pages のサブパスでも解決できます。
+`base` / マニフェストの `id`・`scope`・`start_url` は `/positive_possible_dialy/` 固定です（同じ `*.github.io` 上の別 PWA と WebAPK が衝突しないようにするため）。
 
 リポジトリの Settings → Pages で Source を **GitHub Actions** にしてください。
