@@ -137,8 +137,24 @@ export function catalogView(doc: DiaryDocument): CatalogView {
       items,
     };
   });
-  const activeItems = categories
+
+  const activeCategories = categories
     .filter((c) => !c.archived)
-    .flatMap((c) => c.items.filter((i) => !i.archived));
-  return { categories, activeItems };
+    .map((c) => ({
+      ...c,
+      items: c.items.filter((i) => !i.archived),
+    }));
+
+  const archivedCategories = [
+    ...categories.filter((c) => c.archived),
+    ...categories
+      .filter((c) => !c.archived && c.items.some((i) => i.archived))
+      .map((c) => ({
+        ...c,
+        items: c.items.filter((i) => i.archived),
+      })),
+  ];
+
+  const activeItems = activeCategories.flatMap((c) => c.items);
+  return { categories, activeCategories, archivedCategories, activeItems };
 }

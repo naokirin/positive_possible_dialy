@@ -1,12 +1,16 @@
 import { describe, expect, it } from 'vitest';
 import {
   addAchievement,
+  archiveCategory,
+  archiveItem,
   canAdd,
   removeAchievement,
+  unarchiveCategory,
+  unarchiveItem,
 } from './commands';
 import { DayKey } from './parse';
 import { emptyDocument } from './presets';
-import { dayGroups, monthCounts } from './projections';
+import { catalogView, dayGroups, monthCounts } from './projections';
 import { YearMonth } from './parse';
 import { deserializeDocument, serializeDocument } from './wire';
 import type { DiaryDocument } from './types';
@@ -123,5 +127,116 @@ describe('removeAchievement', () => {
     const twice = removeAchievement(once, id);
     expect(once.achievements).toHaveLength(0);
     expect(twice.achievements).toHaveLength(0);
+  });
+});
+
+describe('archive catalog', () => {
+  it('moves archived categories out of activeCategories', () => {
+    const base = emptyDocument();
+    const cat = base.categories[0];
+    expect(cat).toBeTruthy();
+    if (!cat) return;
+
+    const archived = archiveCategory(base, cat.id);
+    const view = catalogView(archived);
+    expect(view.activeCategories.some((c) => c.id === cat.id)).toBe(false);
+    expect(view.archivedCategories.some((c) => c.id === cat.id && c.archived)).toBe(
+      true,
+    );
+    const archivedItemIds = new Set(
+      archived.items.filter((i) => i.categoryId === cat.id).map((i) => i.id),
+    );
+    expect(view.activeItems.every((i) => !archivedItemIds.has(i.id))).toBe(true);
+  });
+
+  it('moves a single archived item into archivedCategories under its parent', () => {
+    const base = emptyDocument();
+    const item = base.items[0];
+    expect(item).toBeTruthy();
+    if (!item) return;
+
+    const archived = archiveItem(base, item.id);
+    const view = catalogView(archived);
+    const activeParent = view.activeCategories.find((c) => c.id === item.categoryId);
+    expect(activeParent?.items.some((i) => i.id === item.id)).toBe(false);
+    const archivedParent = view.archivedCategories.find(
+      (c) => c.id === item.categoryId && !c.archived,
+    );
+    expect(archivedParent?.items.some((i) => i.id === item.id)).toBe(true);
+  });
+
+  it('restores a category and all of its items', () => {
+    const base = emptyDocument();
+    const cat = base.categories[0];
+    expect(cat).toBeTruthy();
+    if (!cat) return;
+
+    const archived = archiveCategory(base, cat.id);
+    const restored = unarchiveCategory(archived, cat.id);
+    const view = catalogView(restored);
+    expect(view.activeCategories.some((c) => c.id === cat.id)).toBe(true);
+    expect(view.archivedCategories.some((c) => c.id === cat.id)).toBe(false);
+    expect(
+      restored.items
+        .filter((i) => i.categoryId === cat.id)
+        .every((i) => !i.archived),
+    ).toBe(true);
+  });
+
+  it('restores an item and reopens its archived parent category', () => {
+    const base = emptyDocument();
+    const item = base.items[0];
+    expect(item).toBeTruthy();
+    if (!item) return;
+
+    const archivedCat = archiveCategory(base, item.categoryId);
+    const restored = unarchiveItem(archivedCat, item.id);
+    expect(restored.items.find((i) => i.id === item.id)?.archived).toBe(false);
+    expect(
+      restored.categories.find((c) => c.id === item.categoryId)?.archived,
+    ).toBe(false);
+  });
+
+  it('keeps sibling items archived when one item is restored from an archived category', () => {
+    const base = emptyDocument();
+    const cat = base.categories[0];
+    expect(cat).toBeTruthy();
+    if (!cat) return;
+    const siblings = base.items.filter((i) => i.categoryId === cat.id);
+    expect(siblings.length).toBeGreaterThan(1);
+    const [first, second] = siblings;
+    expect(first && second).toBeTruthy();
+    if (!first || !second) return;
+
+    const archived = archiveCategory(base, cat.id);
+    const restored = unarchiveItem(archived, first.id);
+    expect(restored.items.find((i) => i.id === first.id)?.archived).toBe(false);
+    expect(restored.items.find((i) => i.id === second.id)?.archived).toBe(true);
+    const view = catalogView(restored);
+    expect(view.activeItems.some((i) => i.id === first.id)).toBe(true);
+    expect(view.activeItems.some((i) => i.id === second.id)).toBe(false);
+    expect(
+      view.archivedCategories.some(
+        (c) => c.id === cat.id && c.items.some((i) => i.id === second.id),
+      ),
+    ).toBe(true);
+  });
+
+  it('round-trips archived catalog through serialize/deserialize', () => {
+    const base = emptyDocument();
+    const cat = base.categories[0];
+    const item = base.items.find((i) => i.categoryId !== cat?.id);
+    expect(cat && item).toBeTruthy();
+    if (!cat || !item) return;
+
+    const archived = archiveItem(archiveCategory(base, cat.id), item.id);
+    const raw = serializeDocument(archived);
+    const loaded = deserializeDocument(raw);
+    expect(loaded.ok).toBe(true);
+    if (!loaded.ok) return;
+    const view = catalogView(loaded.doc);
+    expect(view.activeCategories.some((c) => c.id === cat.id)).toBe(false);
+    expect(view.archivedCategories.some((c) => c.id === cat.id)).toBe(true);
+    expect(view.activeItems.some((i) => i.id === item.id)).toBe(false);
   });
 });

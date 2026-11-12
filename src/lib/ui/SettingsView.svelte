@@ -38,6 +38,16 @@
     await diary.archiveItem(id);
   }
 
+  async function unarchiveCategory(id: CategoryId) {
+    await diary.unarchiveCategory(id);
+    status = 'カテゴリを復元しました';
+  }
+
+  async function unarchiveItem(id: ItemId) {
+    await diary.unarchiveItem(id);
+    status = '項目を復元しました';
+  }
+
   async function exportData() {
     const json = await diary.exportBundle();
     const blob = new Blob([json], { type: 'application/json' });
@@ -94,57 +104,87 @@
       <button type="button" onclick={addCategory}>追加</button>
     </div>
 
-    {#each diary.categories.categories as cat (cat.id)}
-      <article class="cat" class:archived={cat.archived}>
+    {#each diary.categories.activeCategories as cat (cat.id)}
+      <article class="cat">
         <div class="cat-head">
           <h3>
             {cat.name}
             {#if cat.origin === 'preset'}
               <span class="tag">プリセット</span>
             {/if}
-            {#if cat.archived}
-              <span class="tag">アーカイブ</span>
-            {/if}
           </h3>
-          {#if !cat.archived}
-            <button type="button" class="ghost" onclick={() => archiveCategory(cat.id, cat.name)}>
-              アーカイブ
-            </button>
-          {/if}
+          <button type="button" class="ghost" onclick={() => archiveCategory(cat.id, cat.name)}>
+            アーカイブ
+          </button>
         </div>
 
         <ul>
           {#each cat.items as item (item.id)}
-            <li class:archived={item.archived}>
+            <li>
               <span>{item.name}</span>
-              {#if !item.archived && !cat.archived}
-                <button type="button" class="ghost" onclick={() => archiveItem(item.id, item.name)}>
-                  アーカイブ
-                </button>
-              {/if}
+              <button type="button" class="ghost" onclick={() => archiveItem(item.id, item.name)}>
+                アーカイブ
+              </button>
             </li>
           {/each}
         </ul>
 
-        {#if !cat.archived}
-          <div class="add-row">
-            <input
-              type="text"
-              placeholder="項目を追加"
-              value={itemDrafts[cat.id] ?? ''}
-              oninput={(e) => {
-                itemDrafts = {
-                  ...itemDrafts,
-                  [cat.id]: (e.currentTarget as HTMLInputElement).value,
-                };
-              }}
-            />
-            <button type="button" onclick={() => addItem(cat.id)}>追加</button>
-          </div>
-        {/if}
+        <div class="add-row">
+          <input
+            type="text"
+            placeholder="項目を追加"
+            value={itemDrafts[cat.id] ?? ''}
+            oninput={(e) => {
+              itemDrafts = {
+                ...itemDrafts,
+                [cat.id]: (e.currentTarget as HTMLInputElement).value,
+              };
+            }}
+          />
+          <button type="button" onclick={() => addItem(cat.id)}>追加</button>
+        </div>
       </article>
     {/each}
   </section>
+
+  {#if diary.categories.archivedCategories.length > 0}
+    <section>
+      <h2>アーカイブ</h2>
+      <p class="hint">使わなくなった分類です。復元すると再び記録に使えます。</p>
+
+      {#each diary.categories.archivedCategories as cat (cat.id)}
+        <article class="cat archived">
+          <div class="cat-head">
+            <h3>
+              {cat.name}
+              {#if cat.origin === 'preset'}
+                <span class="tag">プリセット</span>
+              {/if}
+              {#if cat.archived}
+                <span class="tag">アーカイブ</span>
+              {/if}
+            </h3>
+            {#if cat.archived}
+              <button type="button" class="ghost" onclick={() => unarchiveCategory(cat.id)}>
+                復元
+              </button>
+            {/if}
+          </div>
+
+          <ul>
+            {#each cat.items as item (item.id)}
+              <li>
+                <span>{item.name}</span>
+                <button type="button" class="ghost" onclick={() => unarchiveItem(item.id)}>
+                  復元
+                </button>
+              </li>
+            {/each}
+          </ul>
+        </article>
+      {/each}
+    </section>
+  {/if}
 
   <section>
     <h2>データの控え</h2>
@@ -306,10 +346,6 @@
     padding: 0.35rem 0;
     color: var(--ink);
     border-bottom: 1px solid color-mix(in srgb, var(--line) 70%, transparent);
-  }
-
-  li.archived {
-    opacity: 0.55;
   }
 
   .data-actions {

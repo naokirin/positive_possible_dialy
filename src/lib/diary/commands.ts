@@ -188,3 +188,28 @@ export function archiveItem(doc: DiaryDocument, id: ItemId): DiaryDocument {
     ),
   };
 }
+
+export function unarchiveCategory(
+  doc: DiaryDocument,
+  id: CategoryId,
+): DiaryDocument {
+  const categories = doc.categories.map((c) =>
+    c.id === id ? { ...c, archived: false } : c,
+  );
+  const items = doc.items.map((i) =>
+    i.categoryId === id ? { ...i, archived: false } : i,
+  );
+  return { ...doc, categories, items };
+}
+
+export function unarchiveItem(doc: DiaryDocument, id: ItemId): DiaryDocument {
+  const target = doc.items.find((i) => i.id === id);
+  if (!target) return doc;
+  const items = doc.items.map((i) =>
+    i.id === id ? { ...i, archived: false } : i,
+  );
+  const categories = doc.categories.map((c) =>
+    c.id === target.categoryId ? { ...c, archived: false } : c,
+  );
+  return { ...doc, categories, items };
+}

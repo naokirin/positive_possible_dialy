@@ -100,5 +100,7 @@ export type CategoryView = {
 
 export type CatalogView = {
   readonly categories: readonly CategoryView[];
+  readonly activeCategories: readonly CategoryView[];
+  readonly archivedCategories: readonly CategoryView[];
   readonly activeItems: readonly ItemView[];
 };

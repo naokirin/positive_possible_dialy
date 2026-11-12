@@ -6,6 +6,8 @@ import {
   archiveItem as cmdArchiveItem,
   canAdd as cmdCanAdd,
   removeAchievement,
+  unarchiveCategory as cmdUnarchiveCategory,
+  unarchiveItem as cmdUnarchiveItem,
   updateAchievement,
 } from './commands';
 import { DayKey } from './parse';
@@ -140,6 +142,14 @@ export const diary = {
 
   async archiveItem(id: ItemId): Promise<void> {
     await commit(cmdArchiveItem(doc, id));
+  },
+
+  async unarchiveCategory(id: CategoryId): Promise<void> {
+    await commit(cmdUnarchiveCategory(doc, id));
+  },
+
+  async unarchiveItem(id: ItemId): Promise<void> {
+    await commit(cmdUnarchiveItem(doc, id));
   },
 
   async exportBundle(): Promise<string> {
